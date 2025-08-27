@@ -14,8 +14,12 @@ pub fn main() !void {
 
     std.debug.print("Writing ini file to stdout...\n\n", .{});
 
-    const stdout = std.io.getStdOut();
-    try zigini.writeFromStruct(config, stdout.writer(), null, .{ .renameHandler = writeRenameHandler, .write_default_values = false });
+    var stdout_buffer = std.mem.zeroes([1024]u8);
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const writer = &stdout_writer.interface;
+
+    try zigini.writeFromStruct(config, writer, null, .{ .renameHandler = writeRenameHandler, .write_default_values = false });
+    try writer.flush();
 }
 
 fn writeRenameHandler(comptime header: ?[]const u8, comptime field_name: ?[]const u8) ?[]const u8 {
