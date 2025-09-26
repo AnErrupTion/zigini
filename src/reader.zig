@@ -21,7 +21,7 @@ pub fn Ini(comptime T: type) type {
     return struct {
         const Self = @This();
         const FieldHandlerFn = fn (allocator: std.mem.Allocator, field: IniField) ?IniField;
-        const ErrorHandlerFn = fn (type_name: []const u8, value: []const u8, err: anyerror) void;
+        const ErrorHandlerFn = fn (type_name: []const u8, key: []const u8, value: []const u8, err: anyerror) void;
         const ReadOptions = struct {
             fieldHandler: ?FieldHandlerFn = null,
             errorHandler: ?ErrorHandlerFn = null,
@@ -138,7 +138,7 @@ pub fn Ini(comptime T: type) type {
                     }
                 } else if (ini_hkv.header.len == 0 and std.ascii.eqlIgnoreCase(field.name, ini_hkv.key)) {
                     const conv_value = self.convert(field.type, ini_hkv.value) catch |err| {
-                        if (error_handler) |handler| @call(.always_inline, handler, .{ @typeName(field.type), ini_hkv.value, err });
+                        if (error_handler) |handler| @call(.always_inline, handler, .{ @typeName(field.type), ini_hkv.key, ini_hkv.value, err });
                         return err;
                     };
                     if (!utils.isDefaultValue(field, @field(data, field.name))) self.free_field(data, field);
