@@ -1,12 +1,12 @@
 .{
     .name = .zigini,
-    .version = "0.3.2",
-    .fingerprint = 0xa1be3af8ed012905,
+    .version = "0.3.3",
+    .fingerprint = 0xa1be3af81534a3df,
     .minimum_zig_version = "0.15.0",
     .dependencies = .{
         .ini = .{
-            .url = "https://github.com/AnErrupTion/ini/archive/ac6e656157b2ac6c98392283a139b47c44a85d54.tar.gz",
-            .hash = "ini-0.1.0-YCQ9YkUnAAA7SjpLwvomwrngMn3TConSAlNgo7Q8ibMZ",
+            .url = "https://github.com/AnErrupTion/ini/archive/918f16d0dcf893d0c1cdffe204faa08bb3584e04.tar.gz",
+            .hash = "ini-0.1.0-YCQ9Ys0pAABixEvvQvhVXAdqRE3wrZk_wiL9TPNHhB8d",
         },
     },
     .paths = .{

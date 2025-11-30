@@ -87,9 +87,7 @@ pub fn Ini(comptime T: type) type {
         }
 
         pub fn readToStruct(self: *Self, reader: *std.Io.Reader, comptime opts: ReadOptions) !T {
-            const deprecated_reader = reader.adaptToOldInterface();
-
-            var parser = ini.parse(self.allocator, deprecated_reader, opts.comment_characters);
+            var parser = ini.parse(self.allocator, reader, opts.comment_characters);
             defer parser.deinit();
 
             var ns: []u8 = &.{};
