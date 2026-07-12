@@ -16,18 +16,25 @@ const WriteOptions = struct {
 
 pub fn writeFromStruct(data: anytype, writer: *std.Io.Writer, comptime namespace: ?[]const u8, comptime opts: WriteOptions) !void {
     comptime var should_write_ns = namespace != null and namespace.?.len != 0;
-    comptime var struct_fields: []std.builtin.Type.StructField = &.{};
+    comptime var field_names: [][]const u8 = &.{};
+    comptime var field_types: []type = &.{};
 
-    inline for (std.meta.fields(@TypeOf(data))) |field| {
-        switch (@typeInfo(field.type)) {
-            .@"struct" => struct_fields = @constCast(struct_fields ++ .{field}),
+    const str = @typeInfo(@TypeOf(data)).@"struct";
+
+    inline for (str.field_names, str.field_types, str.field_attrs) |name, ftype, attr| {
+        switch (@typeInfo(ftype)) {
+            .@"struct" => {
+                field_names = @constCast(field_names ++ .{name});
+                field_types = @constCast(field_types ++ .{ftype});
+            },
             else => |t_info| {
-                if (t_info == .optional and @typeInfo(Child(field.type)) == .@"struct") {
-                    struct_fields = @constCast(struct_fields ++ .{field});
+                if (t_info == .optional and @typeInfo(Child(ftype)) == .@"struct") {
+                    field_names = @constCast(field_names ++ .{name});
+                    field_types = @constCast(field_types ++ .{ftype});
                     continue;
                 }
 
-                comptime var field_name: []const u8 = field.name;
+                comptime var field_name: []const u8 = name;
                 comptime if (opts.renameHandler) |handler| {
                     const new_field_name = @call(.auto, handler, .{ namespace, field_name });
                     if (new_field_name != null) {
@@ -44,12 +51,12 @@ pub fn writeFromStruct(data: anytype, writer: *std.Io.Writer, comptime namespace
                     should_write_ns = false;
                 }
 
-                const value = @field(data, field.name);
-                if (opts.write_default_values or !utils.isDefaultValue(field, value)) {
+                const value = @field(data, name);
+                if (opts.write_default_values or !utils.isDefaultValue(ftype, value, attr)) {
                     if (t_info == .optional and value == null) {
                         try writeProperty(writer, field_name, "null", opts.writeValue);
                     } else {
-                        try writeProperty(writer, field_name, utils.unwrapIfOptional(field.type, value), opts.writeValue);
+                        try writeProperty(writer, field_name, utils.unwrapIfOptional(ftype, value), opts.writeValue);
                     }
                 }
             },
@@ -57,11 +64,11 @@ pub fn writeFromStruct(data: anytype, writer: *std.Io.Writer, comptime namespace
     }
 
     if (namespace == null or namespace.?.len == 0) {
-        inline for (struct_fields) |field| {
-            if (@typeInfo(field.type) == .@"struct") {
-                try writeFromStruct(@field(data, field.name), writer, field.name, opts);
-            } else if (@field(data, field.name)) |inner_data| {
-                try writeFromStruct(inner_data, writer, field.name, opts);
+        inline for (field_names, field_types) |name, ftype| {
+            if (@typeInfo(ftype) == .@"struct") {
+                try writeFromStruct(@field(data, name), writer, name, opts);
+            } else if (@field(data, name)) |inner_data| {
+                try writeFromStruct(inner_data, writer, name, opts);
             }
         }
     }
