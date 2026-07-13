@@ -44,7 +44,7 @@ pub fn defaultConvertWithDelegate(
         },
         .pointer => |p| {
             if (p.child != u8) @compileError("Type Unsupported");
-            if (p.sentinel_ptr != null) return try arena_allocator.dupeZ(u8, val);
+            if (p.sentinel_ptr != null) return try arena_allocator.dupeSentinel(u8, val, 0);
             return try arena_allocator.dupe(u8, val);
         },
         .void => return {},
@@ -126,27 +126,27 @@ pub fn Ini(comptime T: type) type {
         }
 
         fn setStructVal(self: *Self, comptime T1: type, data: *T1, ini_hkv: IniField, opts: ReadOptions) !void {
-            inline for (std.meta.fields(T1)) |field| {
-                const field_info = @typeInfo(field.type);
-                const is_opt_struct = field_info == .optional and @typeInfo(Child(field.type)) == .@"struct";
+            inline for (comptime std.meta.fieldNames(T1), comptime std.meta.fieldTypes(T1)) |name, ftype| {
+                const field_info = @typeInfo(ftype);
+                const is_opt_struct = field_info == .optional and @typeInfo(Child(ftype)) == .@"struct";
                 if (field_info == .@"struct" or is_opt_struct) {
-                    if (ini_hkv.header.len != 0 and std.ascii.eqlIgnoreCase(field.name, ini_hkv.header)) {
-                        comptime var field_type = field.type;
+                    if (ini_hkv.header.len != 0 and std.ascii.eqlIgnoreCase(name, ini_hkv.header)) {
+                        comptime var field_type = ftype;
                         if (field_info == .optional) {
                             field_type = Child(field_type);
-                            if (@field(data, field.name) == null)
-                                @field(data, field.name) = field_type{};
+                            if (@field(data, name) == null)
+                                @field(data, name) = field_type{};
                         }
-                        var inner_struct = utils.unwrapIfOptional(field.type, @field(data, field.name));
+                        var inner_struct = utils.unwrapIfOptional(ftype, @field(data, name));
                         try self.setStructVal(field_type, &inner_struct, .{ .key = ini_hkv.key, .value = ini_hkv.value }, opts);
-                        @field(data, field.name) = inner_struct;
+                        @field(data, name) = inner_struct;
                     }
-                } else if (ini_hkv.header.len == 0 and std.ascii.eqlIgnoreCase(field.name, ini_hkv.key)) {
-                    const conv_value = opts.convert(self.arena.allocator(), field.type, ini_hkv.value) catch |err| {
-                        if (opts.errorHandler) |handler| @call(.auto, handler, .{ @typeName(field.type), ini_hkv.key, ini_hkv.value, err });
+                } else if (ini_hkv.header.len == 0 and std.ascii.eqlIgnoreCase(name, ini_hkv.key)) {
+                    const conv_value = opts.convert(self.arena.allocator(), ftype, ini_hkv.value) catch |err| {
+                        if (opts.errorHandler) |handler| @call(.auto, handler, .{ @typeName(ftype), ini_hkv.key, ini_hkv.value, err });
                         return err;
                     };
-                    @field(data, field.name) = conv_value;
+                    @field(data, name) = conv_value;
                 }
             }
         }

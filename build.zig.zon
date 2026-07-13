@@ -1,8 +1,8 @@
 .{
     .name = .zigini,
-    .version = "0.5.0",
+    .version = "0.6.0",
     .fingerprint = 0xa1be3af8ed012905,
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .ini = .{
             .url = "git+https://github.com/ziglibs/ini#10cfba648f709588ab2f8785f56641024c510df9",
